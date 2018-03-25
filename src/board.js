@@ -5,7 +5,7 @@ class Board extends Component {
     constructor() {
         super();
         this.state = {
-            cards: []
+            cardsToRender: []
         }
         this.selectedNumbers = [];
         this.resetValues();
@@ -15,7 +15,7 @@ class Board extends Component {
         this.selectedNumbers = [];
         this.valueToFind = 0;
         this.valuesFound = [];
-        this.cardsToRender = 0;
+        this.nbrOfCardsToRender = 0;
     }
 
     render() {
@@ -25,10 +25,19 @@ class Board extends Component {
                 <label htmlFor="nbrOfCards" />
                 <div>
                     <input type="text" name="nbrOfCards" ref="nbrOfCards" />
-                    <button onClick={this.renderNewCards.bind(this)}>Render cards</button>
+                    <button onClick={() => this.renderNewCards()}>Render cards</button>
                 </div>
                 This is the board
-                {this.state.cards}
+                {
+                    this.state.cardsToRender.map((number) =>
+                            <Card 
+                                key={number.toString()}
+                                onclick={() => this.handleOnClick(number)} 
+                                isselected={this.selectedNumbers.indexOf(number) > -1 || 
+                                    this.valuesFound.indexOf((number > 0 ? number : number * -1)) > -1}
+                                number={number > 0 ? number : number * -1} />
+                    )
+                }
             </div>
         );
     }
@@ -39,35 +48,23 @@ class Board extends Component {
             return;
         }
         this.resetValues();
-        this.renderCards(parseInt(this.refs.nbrOfCards.value, 10));
+        this.createCardsToRender(parseInt(this.refs.nbrOfCards.value, 10));
     }
 
-    renderCards(nbrOfCards) {
-        if(this.cardsToRender === 0) {
-            this.cardsToRender = nbrOfCards
+    createCardsToRender(nbrOfCards) {
+        if(this.nbrOfCardsToRender === 0) {
+            this.nbrOfCardsToRender = nbrOfCards
         }
-        let cards=[];
+        let cardsToRender = [];
         while(nbrOfCards > 0) {
-            if(this.valuesFound.indexOf(nbrOfCards) === -1) {
-                cards.push(
-                    <Card key={nbrOfCards} 
-                        number={nbrOfCards} 
-                        onclick={this.handleOnClick.bind(this, nbrOfCards)} 
-                        isselected={this.selectedNumbers.indexOf(nbrOfCards) > -1} />
-                );
-                cards.push(
-                    <Card key={nbrOfCards + this.refs.nbrOfCards.value} 
-                        number={nbrOfCards} 
-                        onclick={this.handleOnClick.bind(this, nbrOfCards + this.cardsToRender)}
-                        isselected={this.selectedNumbers.indexOf(nbrOfCards + this.cardsToRender) > -1} />
-                );
-            }
+            cardsToRender.push(nbrOfCards);
+            cardsToRender.push(nbrOfCards * -1);
             nbrOfCards--;
         }
         this.setState({
-            cards: cards
+            cardsToRender: cardsToRender
         });
-        if(cards.length === 0) {
+        if(this.nbrOfCardsToRender === this.valuesFound.length) {
             alert('all done!');
         }
     }
@@ -75,27 +72,19 @@ class Board extends Component {
     handleOnClick(val) {
         this.selectedNumbers.push(val);
         if(this.valueToFind === 0) {
-            if(val > this.cardsToRender) {
-                this.valueToFind = val - this.cardsToRender;
-            }
-            else {
-                this.valueToFind = val + this.cardsToRender;
-            }
+            this.valueToFind = val * -1;
+            this.createCardsToRender(this.nbrOfCardsToRender);
         }
-
-        this.renderCards(this.cardsToRender);
-
-        if(this.selectedNumbers.length > 1) {
+        else {
+            this.createCardsToRender(this.nbrOfCardsToRender);
             setTimeout(() => {
                 if(this.valueToFind === val) {
-                    if(val > this.cardsToRender) {
-                        val -= this.cardsToRender;
-                    }
-                    this.valuesFound.push(val);
+                    this.valuesFound.push(val > 0 ? val : val * -1);
                 }
                 this.valueToFind = 0;
                 this.selectedNumbers = [];
-                this.renderCards(this.cardsToRender);
+                
+                this.createCardsToRender(this.nbrOfCardsToRender);
             },1500);
         }
     }
